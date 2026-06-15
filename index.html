@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>CRM Test Supabase</title>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page">
+    <h1>CRM Test</h1>
+    <p class="intro">Test de connexion entre GitHub et Supabase</p>
+
+    <div class="card">
+      <h2>Ajouter un magasin</h2>
+
+      <div class="form">
+        <input 
+          type="text" 
+          id="nomMagasin" 
+          placeholder="Nom du magasin"
+        />
+
+        <button id="btnAjouter">
+          Ajouter
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Magasins enregistrés</h2>
+      <div id="listeMagasins">
+        Chargement...
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
