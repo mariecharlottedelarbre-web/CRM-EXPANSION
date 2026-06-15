@@ -43,10 +43,13 @@ async function afficherMagasins() {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("Erreur Supabase :", error);
-    listeMagasins.innerHTML = "Erreur lors du chargement.";
-    return;
-  }
+  console.error("Erreur Supabase :", error);
+  listeMagasins.innerHTML = `
+    Erreur lors du chargement :<br>
+    ${error.message}
+  `;
+  return;
+}
 
   if (data.length === 0) {
     listeMagasins.innerHTML = "Aucun magasin enregistré.";
