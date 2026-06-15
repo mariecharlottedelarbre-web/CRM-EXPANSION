@@ -27,10 +27,10 @@ async function ajouterMagasin() {
     ]);
 
   if (error) {
-    console.error("Erreur Supabase :", error);
-    alert("Erreur lors de l’enregistrement.");
-    return;
-  }
+  console.error("Erreur Supabase :", error);
+  listeMagasins.innerHTML = "Erreur lors du chargement.";
+  return;
+}
 
   inputMagasin.value = "";
   afficherMagasins();
