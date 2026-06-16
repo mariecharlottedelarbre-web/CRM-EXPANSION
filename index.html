@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>CRM Test Supabase</title>
+  <title>CRM Magasins</title>
 
   <style>
     * {
@@ -14,118 +14,425 @@
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      background: #f3f4f6;
+      background: #f4f5f7;
       color: #111827;
     }
 
-    .page {
-      max-width: 900px;
+    .app {
+      max-width: 1180px;
       margin: 0 auto;
-      padding: 40px 20px;
+      padding: 32px 18px;
     }
 
-    h1 {
-      margin-bottom: 5px;
-      font-size: 36px;
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 26px;
     }
 
-    .intro {
-      margin-bottom: 30px;
+    h1, h2, h3 {
+      margin: 0;
+    }
+
+    .subtitle {
       color: #6b7280;
+      margin-top: 6px;
+    }
+
+    .home-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-top: 30px;
+    }
+
+    .commercial-card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 18px;
+      padding: 28px;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+      transition: 0.2s;
+    }
+
+    .commercial-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 28px rgba(0,0,0,0.08);
+    }
+
+    .commercial-card h2 {
+      font-size: 22px;
+      margin-bottom: 10px;
     }
 
     .card {
       background: white;
-      padding: 24px;
-      border-radius: 14px;
-      margin-bottom: 20px;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+      border: 1px solid #e5e7eb;
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.04);
     }
 
-    .card h2 {
-      margin-top: 0;
-      font-size: 22px;
+    .filters {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 18px;
     }
 
-    .form {
-      display: flex;
-      gap: 10px;
-    }
-
-    input {
-      flex: 1;
-      padding: 12px;
+    input, select, textarea {
+      width: 100%;
+      padding: 11px 12px;
       border: 1px solid #d1d5db;
-      border-radius: 8px;
-      font-size: 15px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: Arial, sans-serif;
+      background: white;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 90px;
     }
 
     button {
-      padding: 12px 18px;
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
+      padding: 11px 15px;
+      font-size: 14px;
+      cursor: pointer;
       background: #111827;
       color: white;
-      font-size: 15px;
-      cursor: pointer;
     }
 
     button:hover {
       background: #374151;
     }
 
-    .magasin {
-      padding: 12px;
-      background: #f9fafb;
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .btn-secondary:hover {
+      background: #d1d5db;
+    }
+
+    .btn-light {
+      background: white;
+      color: #111827;
+      border: 1px solid #d1d5db;
+    }
+
+    .btn-light:hover {
+      background: #f3f4f6;
+    }
+
+    .btn-danger {
+      background: #b91c1c;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #991b1b;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .store-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .store-card {
+      background: white;
       border: 1px solid #e5e7eb;
-      border-radius: 8px;
+      border-radius: 16px;
+      padding: 16px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .store-card:hover {
+      border-color: #111827;
+      transform: translateY(-2px);
+    }
+
+    .store-name {
+      font-weight: bold;
+      font-size: 17px;
       margin-bottom: 8px;
     }
 
-    .error {
-      color: #b91c1c;
-      background: #fee2e2;
+    .store-meta {
+      color: #6b7280;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    .badge-green {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .badge-gray {
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .detail-layout {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .photo-box {
+      width: 100%;
+      height: 260px;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #e5e7eb;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #6b7280;
+      text-align: center;
+    }
+
+    .photo-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .info-item {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 13px;
+    }
+
+    .info-label {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 5px;
+    }
+
+    .info-value {
+      font-weight: bold;
+    }
+
+    .visit-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .visit-item {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
       padding: 12px;
-      border-radius: 8px;
+    }
+
+    .visit-date {
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .modal-bg {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 50;
+    }
+
+    .modal {
+      background: white;
+      width: 100%;
+      max-width: 760px;
+      border-radius: 18px;
+      padding: 24px;
+      max-height: 92vh;
+      overflow: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+
+    .full {
+      grid-column: 1 / -1;
+    }
+
+    .message {
+      margin-top: 12px;
+      font-size: 14px;
     }
 
     .success {
       color: #166534;
       background: #dcfce7;
-      padding: 12px;
-      border-radius: 8px;
+      padding: 10px;
+      border-radius: 10px;
+    }
+
+    .error {
+      color: #991b1b;
+      background: #fee2e2;
+      padding: 10px;
+      border-radius: 10px;
+    }
+
+    .empty {
+      color: #6b7280;
+      padding: 24px;
+      text-align: center;
+    }
+
+    @media (max-width: 900px) {
+      .home-grid,
+      .store-grid,
+      .detail-layout,
+      .filters,
+      .form-grid,
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
     }
   </style>
 </head>
 
 <body>
-  <div class="page">
-    <h1>CRM Test</h1>
-    <p class="intro">Test de connexion entre GitHub et Supabase</p>
+  <div class="app" id="app"></div>
 
-    <div class="card">
-      <h2>Ajouter un magasin</h2>
-
-      <div class="form">
-        <input 
-          type="text" 
-          id="nomMagasin" 
-          placeholder="Nom du magasin"
-        />
-
-        <button id="btnAjouter">
-          Ajouter
-        </button>
+  <div class="modal-bg" id="storeModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="storeModalTitle">Ajouter un magasin</h2>
+        <button class="btn-secondary" onclick="closeStoreModal()">Fermer</button>
       </div>
 
-      <p id="message"></p>
+      <form id="storeForm">
+        <div class="form-grid">
+          <div class="full">
+            <label>Nom du magasin</label>
+            <input id="storeName" required />
+          </div>
+
+          <div>
+            <label>Ville</label>
+            <input id="storeCity" />
+          </div>
+
+          <div>
+            <label>Adresse</label>
+            <input id="storeAddress" />
+          </div>
+
+          <div>
+            <label>Prix de vente du magasin</label>
+            <input id="storePrice" type="number" step="0.01" />
+          </div>
+
+          <div>
+            <label>CA</label>
+            <input id="storeCA" type="number" step="0.01" />
+          </div>
+
+          <div>
+            <label>Date de signature du contrat</label>
+            <input id="storeSignature" type="date" />
+          </div>
+
+          <div class="full">
+            <label>Photo du magasin</label>
+            <input id="storePhoto" type="file" accept="image/*" />
+          </div>
+        </div>
+
+        <div class="actions" style="margin-top:18px;">
+          <button type="submit">Enregistrer</button>
+          <button type="button" class="btn-secondary" onclick="closeStoreModal()">Annuler</button>
+        </div>
+
+        <div id="storeFormMessage" class="message"></div>
+      </form>
     </div>
+  </div>
 
-    <div class="card">
-      <h2>Magasins enregistrés</h2>
-      <div id="listeMagasins">
-        Chargement...
+  <div class="modal-bg" id="visitModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Ajouter une visite</h2>
+        <button class="btn-secondary" onclick="closeVisitModal()">Fermer</button>
       </div>
+
+      <form id="visitForm">
+        <div class="form-grid">
+          <div>
+            <label>Date de visite</label>
+            <input id="visitDate" type="date" required />
+          </div>
+
+          <div class="full">
+            <label>Commentaire</label>
+            <textarea id="visitComment" placeholder="Compte-rendu de visite, remarques, actions à prévoir..."></textarea>
+          </div>
+        </div>
+
+        <div class="actions" style="margin-top:18px;">
+          <button type="submit">Ajouter la visite</button>
+          <button type="button" class="btn-secondary" onclick="closeVisitModal()">Annuler</button>
+        </div>
+
+        <div id="visitFormMessage" class="message"></div>
+      </form>
     </div>
   </div>
 
@@ -137,59 +444,560 @@
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    const inputMagasin = document.getElementById("nomMagasin");
-    const btnAjouter = document.getElementById("btnAjouter");
-    const listeMagasins = document.getElementById("listeMagasins");
-    const message = document.getElementById("message");
+    const commerciaux = [
+      { id: "laurent-page", nom: "Laurent Page" },
+      { id: "jerome-gigmes", nom: "Jérôme Gigmes" },
+      { id: "laurent-pizzolato", nom: "Laurent Pizzolato" }
+    ];
 
-    btnAjouter.addEventListener("click", ajouterMagasin);
+    let currentCommercial = null;
+    let magasins = [];
+    let visites = [];
+    let selectedMagasin = null;
+    let editingMagasin = null;
 
-    async function ajouterMagasin() {
-      const nom = inputMagasin.value.trim();
+    const app = document.getElementById("app");
 
-      if (nom === "") {
-        message.innerHTML = `<span class="error">Merci d’écrire un nom de magasin.</span>`;
-        return;
-      }
+    const filters = {
+      search: "",
+      ville: "",
+      contrat: "",
+      caMin: "",
+      caMax: ""
+    };
 
-      const { error } = await supabase
-        .from("magasins")
-        .insert([{ nom: nom }]);
+    function formatMoney(value) {
+      if (value === null || value === undefined || value === "") return "Non renseigné";
 
-      if (error) {
-        console.error("Erreur Supabase :", error);
-        message.innerHTML = `<span class="error">Erreur : ${error.message}</span>`;
-        return;
-      }
-
-      message.innerHTML = `<span class="success">Magasin enregistré avec succès.</span>`;
-      inputMagasin.value = "";
-      afficherMagasins();
+      return Number(value).toLocaleString("fr-FR", {
+        style: "currency",
+        currency: "EUR",
+        maximumFractionDigits: 0
+      });
     }
 
-    async function afficherMagasins() {
+    function formatDate(date) {
+      if (!date) return "Non renseigné";
+      return new Date(date + "T00:00:00").toLocaleDateString("fr-FR");
+    }
+
+    function escapeHTML(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function getLatestVisit(magasinId) {
+      const related = visites
+        .filter(v => v.magasin_id === magasinId)
+        .sort((a, b) => new Date(b.date_visite) - new Date(a.date_visite));
+
+      return related[0] || null;
+    }
+
+    function renderHome() {
+      currentCommercial = null;
+      selectedMagasin = null;
+
+      app.innerHTML = `
+        <div class="topbar">
+          <div>
+            <h1>CRM Magasins</h1>
+            <p class="subtitle">Choisis un commercial pour accéder à ses magasins.</p>
+          </div>
+        </div>
+
+        <div class="home-grid">
+          ${commerciaux.map(c => `
+            <div class="commercial-card" data-commercial="${c.id}">
+              <h2>${escapeHTML(c.nom)}</h2>
+              <p class="subtitle">Accéder à l’espace commercial</p>
+            </div>
+          `).join("")}
+        </div>
+      `;
+
+      document.querySelectorAll("[data-commercial]").forEach(card => {
+        card.addEventListener("click", () => {
+          const id = card.dataset.commercial;
+          currentCommercial = commerciaux.find(c => c.id === id);
+          loadDashboard();
+        });
+      });
+    }
+
+    async function loadDashboard() {
+      app.innerHTML = `<div class="card"><p>Chargement des magasins...</p></div>`;
+
       const { data, error } = await supabase
         .from("magasins")
         .select("*")
+        .eq("commercial_id", currentCommercial.id)
+        .eq("archive", false)
         .order("created_at", { ascending: false });
 
       if (error) {
-        console.error("Erreur Supabase :", error);
-        listeMagasins.innerHTML = `<div class="error">Erreur lors du chargement : ${error.message}</div>`;
+        app.innerHTML = `<div class="error">Erreur chargement magasins : ${escapeHTML(error.message)}</div>`;
         return;
       }
 
-      if (!data || data.length === 0) {
-        listeMagasins.innerHTML = "Aucun magasin enregistré.";
-        return;
+      magasins = data || [];
+
+      if (magasins.length > 0) {
+        const ids = magasins.map(m => m.id);
+
+        const { data: visitesData, error: visitesError } = await supabase
+          .from("visites")
+          .select("*")
+          .in("magasin_id", ids)
+          .order("date_visite", { ascending: false });
+
+        if (visitesError) {
+          app.innerHTML = `<div class="error">Erreur chargement visites : ${escapeHTML(visitesError.message)}</div>`;
+          return;
+        }
+
+        visites = visitesData || [];
+      } else {
+        visites = [];
       }
 
-      listeMagasins.innerHTML = data
-        .map((magasin) => `<div class="magasin">${magasin.nom}</div>`)
-        .join("");
+      renderDashboard();
     }
 
-    afficherMagasins();
+    function getFilteredMagasins() {
+      return magasins.filter(m => {
+        const search = filters.search.toLowerCase();
+
+        const matchSearch =
+          !search ||
+          String(m.nom || "").toLowerCase().includes(search) ||
+          String(m.ville || "").toLowerCase().includes(search) ||
+          String(m.adresse || "").toLowerCase().includes(search);
+
+        const matchVille = !filters.ville || m.ville === filters.ville;
+
+        const matchContrat =
+          !filters.contrat ||
+          (filters.contrat === "signe" && m.date_signature) ||
+          (filters.contrat === "non-signe" && !m.date_signature);
+
+        const ca = Number(m.ca || 0);
+        const matchCaMin = !filters.caMin || ca >= Number(filters.caMin);
+        const matchCaMax = !filters.caMax || ca <= Number(filters.caMax);
+
+        return matchSearch && matchVille && matchContrat && matchCaMin && matchCaMax;
+      });
+    }
+
+    function renderDashboard() {
+      const villes = [...new Set(magasins.map(m => m.ville).filter(Boolean))].sort();
+      const filtered = getFilteredMagasins();
+
+      app.innerHTML = `
+        <div class="topbar">
+          <div>
+            <h1>${escapeHTML(currentCommercial.nom)}</h1>
+            <p class="subtitle">${magasins.length} magasin(s) enregistré(s)</p>
+          </div>
+
+          <div class="actions">
+            <button class="btn-light" id="backHomeBtn">Retour accueil</button>
+            <button id="addStoreBtn">+ Ajouter un magasin</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Recherche et filtres</h2>
+
+          <div class="filters">
+            <input id="filterSearch" placeholder="Rechercher un magasin, une ville, une adresse..." value="${escapeHTML(filters.search)}" />
+
+            <select id="filterVille">
+              <option value="">Toutes les villes</option>
+              ${villes.map(v => `<option value="${escapeHTML(v)}" ${filters.ville === v ? "selected" : ""}>${escapeHTML(v)}</option>`).join("")}
+            </select>
+
+            <select id="filterContrat">
+              <option value="">Tous les contrats</option>
+              <option value="signe" ${filters.contrat === "signe" ? "selected" : ""}>Contrat signé</option>
+              <option value="non-signe" ${filters.contrat === "non-signe" ? "selected" : ""}>Non signé</option>
+            </select>
+
+            <input id="filterCaMin" type="number" placeholder="CA min" value="${escapeHTML(filters.caMin)}" />
+            <input id="filterCaMax" type="number" placeholder="CA max" value="${escapeHTML(filters.caMax)}" />
+          </div>
+        </div>
+
+        <div class="store-grid">
+          ${
+            filtered.length === 0
+              ? `<div class="card empty">Aucun magasin ne correspond à ta recherche.</div>`
+              : filtered.map(m => {
+                  const latestVisit = getLatestVisit(m.id);
+
+                  return `
+                    <div class="store-card" data-store="${m.id}">
+                      <div class="store-name">${escapeHTML(m.nom)}</div>
+                      <div class="store-meta">
+                        Ville : ${escapeHTML(m.ville || "Non renseignée")}<br>
+                        CA : ${formatMoney(m.ca)}<br>
+                        Dernière visite : ${latestVisit ? formatDate(latestVisit.date_visite) : "Aucune visite"}
+                      </div>
+                      <span class="badge ${m.date_signature ? "badge-green" : "badge-gray"}">
+                        ${m.date_signature ? "Contrat signé" : "Contrat non signé"}
+                      </span>
+                    </div>
+                  `;
+                }).join("")
+          }
+        </div>
+      `;
+
+      document.getElementById("backHomeBtn").addEventListener("click", renderHome);
+      document.getElementById("addStoreBtn").addEventListener("click", () => openStoreModal());
+
+      document.getElementById("filterSearch").addEventListener("input", e => {
+        filters.search = e.target.value;
+        renderDashboard();
+      });
+
+      document.getElementById("filterVille").addEventListener("change", e => {
+        filters.ville = e.target.value;
+        renderDashboard();
+      });
+
+      document.getElementById("filterContrat").addEventListener("change", e => {
+        filters.contrat = e.target.value;
+        renderDashboard();
+      });
+
+      document.getElementById("filterCaMin").addEventListener("input", e => {
+        filters.caMin = e.target.value;
+        renderDashboard();
+      });
+
+      document.getElementById("filterCaMax").addEventListener("input", e => {
+        filters.caMax = e.target.value;
+        renderDashboard();
+      });
+
+      document.querySelectorAll("[data-store]").forEach(card => {
+        card.addEventListener("click", () => {
+          selectedMagasin = magasins.find(m => m.id === card.dataset.store);
+          renderMagasinDetail();
+        });
+      });
+    }
+
+    async function refreshSelectedMagasin() {
+      const { data, error } = await supabase
+        .from("magasins")
+        .select("*")
+        .eq("id", selectedMagasin.id)
+        .single();
+
+      if (!error && data) {
+        selectedMagasin = data;
+
+        const index = magasins.findIndex(m => m.id === data.id);
+
+        if (index !== -1) {
+          magasins[index] = data;
+        }
+      }
+    }
+
+    async function renderMagasinDetail() {
+      if (!selectedMagasin) return;
+
+      const { data: visitesData, error } = await supabase
+        .from("visites")
+        .select("*")
+        .eq("magasin_id", selectedMagasin.id)
+        .order("date_visite", { ascending: false });
+
+      if (error) {
+        app.innerHTML = `<div class="error">Erreur chargement fiche : ${escapeHTML(error.message)}</div>`;
+        return;
+      }
+
+      const magasinVisites = visitesData || [];
+
+      app.innerHTML = `
+        <div class="topbar">
+          <div>
+            <h1>${escapeHTML(selectedMagasin.nom)}</h1>
+            <p class="subtitle">${escapeHTML(currentCommercial.nom)}</p>
+          </div>
+
+          <div class="actions">
+            <button class="btn-light" id="backDashboardBtn">Retour à la liste</button>
+            <button class="btn-secondary" id="editStoreBtn">Modifier la fiche</button>
+            <button id="addVisitBtn">+ Ajouter une visite</button>
+            <button class="btn-danger" id="deleteStoreBtn">Supprimer le magasin</button>
+          </div>
+        </div>
+
+        <div class="detail-layout">
+          <div class="card">
+            <div class="photo-box">
+              ${
+                selectedMagasin.photo_url
+                  ? `<img src="${escapeHTML(selectedMagasin.photo_url)}" alt="Photo magasin">`
+                  : `Aucune photo<br>Ajoute une photo en modifiant la fiche`
+              }
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Fiche magasin</h2>
+
+            <div class="info-grid">
+              <div class="info-item">
+                <div class="info-label">Adresse</div>
+                <div class="info-value">${escapeHTML(selectedMagasin.adresse || "Non renseignée")}</div>
+              </div>
+
+              <div class="info-item">
+                <div class="info-label">Ville</div>
+                <div class="info-value">${escapeHTML(selectedMagasin.ville || "Non renseignée")}</div>
+              </div>
+
+              <div class="info-item">
+                <div class="info-label">Prix de vente</div>
+                <div class="info-value">${formatMoney(selectedMagasin.prix_vente)}</div>
+              </div>
+
+              <div class="info-item">
+                <div class="info-label">CA</div>
+                <div class="info-value">${formatMoney(selectedMagasin.ca)}</div>
+              </div>
+
+              <div class="info-item">
+                <div class="info-label">Date de signature du contrat</div>
+                <div class="info-value">${formatDate(selectedMagasin.date_signature)}</div>
+              </div>
+
+              <div class="info-item">
+                <div class="info-label">Nombre de visites</div>
+                <div class="info-value">${magasinVisites.length}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:20px;">
+          <h2>Historique des visites</h2>
+
+          <div class="visit-list">
+            ${
+              magasinVisites.length === 0
+                ? `<div class="empty">Aucune visite enregistrée pour ce magasin.</div>`
+                : magasinVisites.map(v => `
+                  <div class="visit-item">
+                    <div class="visit-date">${formatDate(v.date_visite)}</div>
+                    <div>${escapeHTML(v.commentaire || "Aucun commentaire")}</div>
+                  </div>
+                `).join("")
+            }
+          </div>
+        </div>
+      `;
+
+      document.getElementById("backDashboardBtn").addEventListener("click", loadDashboard);
+      document.getElementById("editStoreBtn").addEventListener("click", () => openStoreModal(selectedMagasin));
+      document.getElementById("addVisitBtn").addEventListener("click", openVisitModal);
+      document.getElementById("deleteStoreBtn").addEventListener("click", deleteSelectedMagasin);
+    }
+
+    function openStoreModal(magasin = null) {
+      editingMagasin = magasin;
+
+      document.getElementById("storeModalTitle").textContent = magasin ? "Modifier le magasin" : "Ajouter un magasin";
+      document.getElementById("storeName").value = magasin?.nom || "";
+      document.getElementById("storeCity").value = magasin?.ville || "";
+      document.getElementById("storeAddress").value = magasin?.adresse || "";
+      document.getElementById("storePrice").value = magasin?.prix_vente || "";
+      document.getElementById("storeCA").value = magasin?.ca || "";
+      document.getElementById("storeSignature").value = magasin?.date_signature || "";
+      document.getElementById("storePhoto").value = "";
+      document.getElementById("storeFormMessage").innerHTML = "";
+      document.getElementById("storeModal").style.display = "flex";
+    }
+
+    window.closeStoreModal = function() {
+      document.getElementById("storeModal").style.display = "none";
+      editingMagasin = null;
+    };
+
+    async function uploadPhoto(file) {
+      if (!file) return null;
+
+      const cleanName = file.name
+        .toLowerCase()
+        .replaceAll(" ", "-")
+        .replace(/[^a-z0-9.-]/g, "");
+
+      const path = `magasins/${Date.now()}-${cleanName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("photos-magasins")
+        .upload(path, file, {
+          cacheControl: "3600",
+          upsert: true
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from("photos-magasins")
+        .getPublicUrl(path);
+
+      return {
+        photo_url: data.publicUrl,
+        photo_path: path
+      };
+    }
+
+    document.getElementById("storeForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+
+      const message = document.getElementById("storeFormMessage");
+      message.innerHTML = `<div class="success">Enregistrement en cours...</div>`;
+
+      try {
+        const file = document.getElementById("storePhoto").files[0];
+        const uploaded = await uploadPhoto(file);
+
+        const payload = {
+          commercial_id: currentCommercial.id,
+          nom: document.getElementById("storeName").value.trim(),
+          ville: document.getElementById("storeCity").value.trim() || null,
+          adresse: document.getElementById("storeAddress").value.trim() || null,
+          prix_vente: document.getElementById("storePrice").value || null,
+          ca: document.getElementById("storeCA").value || null,
+          date_signature: document.getElementById("storeSignature").value || null,
+          updated_at: new Date().toISOString()
+        };
+
+        if (uploaded) {
+          payload.photo_url = uploaded.photo_url;
+          payload.photo_path = uploaded.photo_path;
+        }
+
+        if (editingMagasin) {
+          const { error } = await supabase
+            .from("magasins")
+            .update(payload)
+            .eq("id", editingMagasin.id);
+
+          if (error) throw error;
+
+          selectedMagasin = { ...selectedMagasin, ...payload };
+          message.innerHTML = `<div class="success">Magasin modifié avec succès.</div>`;
+        } else {
+          const { data, error } = await supabase
+            .from("magasins")
+            .insert([payload])
+            .select()
+            .single();
+
+          if (error) throw error;
+
+          selectedMagasin = data;
+          message.innerHTML = `<div class="success">Magasin ajouté avec succès.</div>`;
+        }
+
+        setTimeout(async () => {
+          closeStoreModal();
+
+          if (selectedMagasin) {
+            await refreshSelectedMagasin();
+            renderMagasinDetail();
+          } else {
+            loadDashboard();
+          }
+        }, 600);
+
+      } catch (error) {
+        console.error(error);
+        message.innerHTML = `<div class="error">Erreur : ${escapeHTML(error.message)}</div>`;
+      }
+    });
+
+    function openVisitModal() {
+      document.getElementById("visitDate").value = "";
+      document.getElementById("visitComment").value = "";
+      document.getElementById("visitFormMessage").innerHTML = "";
+      document.getElementById("visitModal").style.display = "flex";
+    }
+
+    window.closeVisitModal = function() {
+      document.getElementById("visitModal").style.display = "none";
+    };
+
+    document.getElementById("visitForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+
+      const message = document.getElementById("visitFormMessage");
+      message.innerHTML = `<div class="success">Ajout de la visite...</div>`;
+
+      const payload = {
+        magasin_id: selectedMagasin.id,
+        date_visite: document.getElementById("visitDate").value,
+        commentaire: document.getElementById("visitComment").value.trim() || null
+      };
+
+      const { error } = await supabase
+        .from("visites")
+        .insert([payload]);
+
+      if (error) {
+        message.innerHTML = `<div class="error">Erreur : ${escapeHTML(error.message)}</div>`;
+        return;
+      }
+
+      message.innerHTML = `<div class="success">Visite ajoutée avec succès.</div>`;
+
+      setTimeout(() => {
+        closeVisitModal();
+        renderMagasinDetail();
+      }, 500);
+    });
+
+    async function deleteSelectedMagasin() {
+      if (!selectedMagasin) return;
+
+      const confirmation = confirm(
+        `Tu es sûr de vouloir supprimer le magasin "${selectedMagasin.nom}" ?\n\nIl ne sera plus visible dans le CRM.`
+      );
+
+      if (!confirmation) return;
+
+      const { error } = await supabase
+        .from("magasins")
+        .update({
+          archive: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", selectedMagasin.id);
+
+      if (error) {
+        alert("Erreur lors de la suppression : " + error.message);
+        return;
+      }
+
+      alert("Magasin supprimé du CRM.");
+
+      selectedMagasin = null;
+      await loadDashboard();
+    }
+
+    renderHome();
   </script>
 </body>
 </html>
