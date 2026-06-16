@@ -198,6 +198,35 @@
       color: #374151;
     }
 
+    .badge-orange {
+      background: #ffedd5;
+      color: #9a3412;
+    }
+
+    .badge-red {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .alert-box {
+      margin-top: 18px;
+      padding: 13px;
+      border-radius: 12px;
+      font-weight: bold;
+    }
+
+    .alert-orange {
+      background: #ffedd5;
+      color: #9a3412;
+      border: 1px solid #fed7aa;
+    }
+
+    .alert-red {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+
     .detail-layout {
       display: grid;
       grid-template-columns: 360px 1fr;
@@ -481,6 +510,58 @@
       return new Date(date + "T00:00:00").toLocaleDateString("fr-FR");
     }
 
+    function addYears(date, years) {
+      const newDate = new Date(date);
+      newDate.setFullYear(newDate.getFullYear() + years);
+      return newDate;
+    }
+
+    function subtractMonths(date, months) {
+      const newDate = new Date(date);
+      newDate.setMonth(newDate.getMonth() - months);
+      return newDate;
+    }
+
+    function getContractInfo(dateSignature) {
+      if (!dateSignature) {
+        return {
+          hasContract: false,
+          endDate: null,
+          alertDate: null,
+          isAlert: false,
+          isExpired: false,
+          message: "Contrat non signé"
+        };
+      }
+
+      const signatureDate = new Date(dateSignature + "T00:00:00");
+      const endDate = addYears(signatureDate, 7);
+      const alertDate = subtractMonths(endDate, 8);
+      const today = new Date();
+
+      today.setHours(0, 0, 0, 0);
+
+      const isAlert = today >= alertDate && today < endDate;
+      const isExpired = today >= endDate;
+
+      let message = `Contrat valable jusqu’au ${endDate.toLocaleDateString("fr-FR")}`;
+
+      if (isExpired) {
+        message = `Contrat terminé depuis le ${endDate.toLocaleDateString("fr-FR")}`;
+      } else if (isAlert) {
+        message = `⚠️ Contrat à renouveler : fin prévue le ${endDate.toLocaleDateString("fr-FR")}`;
+      }
+
+      return {
+        hasContract: true,
+        endDate,
+        alertDate,
+        isAlert,
+        isExpired,
+        message
+      };
+    }
+
     function escapeHTML(value) {
       return String(value ?? "")
         .replaceAll("&", "&amp;")
@@ -583,7 +664,9 @@
         const matchContrat =
           !filters.contrat ||
           (filters.contrat === "signe" && m.date_signature) ||
-          (filters.contrat === "non-signe" && !m.date_signature);
+          (filters.contrat === "non-signe" && !m.date_signature) ||
+          (filters.contrat === "alerte" && getContractInfo(m.date_signature).isAlert) ||
+          (filters.contrat === "termine" && getContractInfo(m.date_signature).isExpired);
 
         const ca = Number(m.ca || 0);
         const matchCaMin = !filters.caMin || ca >= Number(filters.caMin);
@@ -625,6 +708,8 @@
               <option value="">Tous les contrats</option>
               <option value="signe" ${filters.contrat === "signe" ? "selected" : ""}>Contrat signé</option>
               <option value="non-signe" ${filters.contrat === "non-signe" ? "selected" : ""}>Non signé</option>
+              <option value="alerte" ${filters.contrat === "alerte" ? "selected" : ""}>À renouveler</option>
+              <option value="termine" ${filters.contrat === "termine" ? "selected" : ""}>Contrat terminé</option>
             </select>
 
             <input id="filterCaMin" type="number" placeholder="CA min" value="${escapeHTML(filters.caMin)}" />
@@ -638,6 +723,21 @@
               ? `<div class="card empty">Aucun magasin ne correspond à ta recherche.</div>`
               : filtered.map(m => {
                   const latestVisit = getLatestVisit(m.id);
+                  const contractInfo = getContractInfo(m.date_signature);
+
+                  let badgeClass = "badge-gray";
+                  let badgeText = "Contrat non signé";
+
+                  if (contractInfo.isExpired) {
+                    badgeClass = "badge-red";
+                    badgeText = "Contrat terminé";
+                  } else if (contractInfo.isAlert) {
+                    badgeClass = "badge-orange";
+                    badgeText = "Contrat à renouveler";
+                  } else if (m.date_signature) {
+                    badgeClass = "badge-green";
+                    badgeText = "Contrat signé";
+                  }
 
                   return `
                     <div class="store-card" data-store="${m.id}">
@@ -645,10 +745,11 @@
                       <div class="store-meta">
                         Ville : ${escapeHTML(m.ville || "Non renseignée")}<br>
                         CA : ${formatMoney(m.ca)}<br>
-                        Dernière visite : ${latestVisit ? formatDate(latestVisit.date_visite) : "Aucune visite"}
+                        Dernière visite : ${latestVisit ? formatDate(latestVisit.date_visite) : "Aucune visite"}<br>
+                        ${contractInfo.endDate ? `Fin contrat : ${contractInfo.endDate.toLocaleDateString("fr-FR")}` : ""}
                       </div>
-                      <span class="badge ${m.date_signature ? "badge-green" : "badge-gray"}">
-                        ${m.date_signature ? "Contrat signé" : "Contrat non signé"}
+                      <span class="badge ${badgeClass}">
+                        ${badgeText}
                       </span>
                     </div>
                   `;
@@ -726,6 +827,7 @@
       }
 
       const magasinVisites = visitesData || [];
+      const contractInfo = getContractInfo(selectedMagasin.date_signature);
 
       app.innerHTML = `
         <div class="topbar">
@@ -742,7 +844,15 @@
           </div>
         </div>
 
-        <div class="detail-layout">
+        ${
+          contractInfo.isExpired
+            ? `<div class="alert-box alert-red">⚠️ ${escapeHTML(contractInfo.message)}</div>`
+            : contractInfo.isAlert
+              ? `<div class="alert-box alert-orange">⚠️ ${escapeHTML(contractInfo.message)}</div>`
+              : ""
+        }
+
+        <div class="detail-layout" style="margin-top:20px;">
           <div class="card">
             <div class="photo-box">
               ${
@@ -780,6 +890,29 @@
               <div class="info-item">
                 <div class="info-label">Date de signature du contrat</div>
                 <div class="info-value">${formatDate(selectedMagasin.date_signature)}</div>
+              </div>
+
+              <div class="info-item">
+                <div class="info-label">Fin du contrat</div>
+                <div class="info-value">${
+                  contractInfo.endDate
+                    ? contractInfo.endDate.toLocaleDateString("fr-FR")
+                    : "Non renseigné"
+                }</div>
+              </div>
+
+              <div class="info-item">
+                <div class="info-label">Alerte renouvellement</div>
+                <div class="info-value">${
+                  contractInfo.alertDate
+                    ? contractInfo.alertDate.toLocaleDateString("fr-FR")
+                    : "Non renseigné"
+                }</div>
+              </div>
+
+              <div class="info-item">
+                <div class="info-label">Statut du contrat</div>
+                <div class="info-value">${escapeHTML(contractInfo.message)}</div>
               </div>
 
               <div class="info-item">
