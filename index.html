@@ -6,8 +6,98 @@
 
   <title>CRM Test Supabase</title>
 
-  <link rel="stylesheet" href="style.css" />
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+      color: #111827;
+    }
+
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    h1 {
+      margin-bottom: 5px;
+      font-size: 36px;
+    }
+
+    .intro {
+      margin-bottom: 30px;
+      color: #6b7280;
+    }
+
+    .card {
+      background: white;
+      padding: 24px;
+      border-radius: 14px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+    }
+
+    .card h2 {
+      margin-top: 0;
+      font-size: 22px;
+    }
+
+    .form {
+      display: flex;
+      gap: 10px;
+    }
+
+    input {
+      flex: 1;
+      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 15px;
+    }
+
+    button {
+      padding: 12px 18px;
+      border: none;
+      border-radius: 8px;
+      background: #111827;
+      color: white;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #374151;
+    }
+
+    .magasin {
+      padding: 12px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+
+    .error {
+      color: #b91c1c;
+      background: #fee2e2;
+      padding: 12px;
+      border-radius: 8px;
+    }
+
+    .success {
+      color: #166534;
+      background: #dcfce7;
+      padding: 12px;
+      border-radius: 8px;
+    }
+  </style>
 </head>
+
 <body>
   <div class="page">
     <h1>CRM Test</h1>
@@ -27,6 +117,8 @@
           Ajouter
         </button>
       </div>
+
+      <p id="message"></p>
     </div>
 
     <div class="card">
@@ -37,6 +129,67 @@
     </div>
   </div>
 
-  <script type="module" src="app.js"></script>
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+    const SUPABASE_URL = "https://nnbmbpycmhqvrzcszbkz.supabase.co/rest/v1/";
+    const SUPABASE_KEY = "sb_publishable_slPyRsJhGZbUZT5rJ1Zf1A_amrs3G8F";
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const inputMagasin = document.getElementById("nomMagasin");
+    const btnAjouter = document.getElementById("btnAjouter");
+    const listeMagasins = document.getElementById("listeMagasins");
+    const message = document.getElementById("message");
+
+    btnAjouter.addEventListener("click", ajouterMagasin);
+
+    async function ajouterMagasin() {
+      const nom = inputMagasin.value.trim();
+
+      if (nom === "") {
+        message.innerHTML = `<span class="error">Merci d’écrire un nom de magasin.</span>`;
+        return;
+      }
+
+      const { error } = await supabase
+        .from("magasins")
+        .insert([{ nom: nom }]);
+
+      if (error) {
+        console.error("Erreur Supabase :", error);
+        message.innerHTML = `<span class="error">Erreur : ${error.message}</span>`;
+        return;
+      }
+
+      message.innerHTML = `<span class="success">Magasin enregistré avec succès.</span>`;
+      inputMagasin.value = "";
+      afficherMagasins();
+    }
+
+    async function afficherMagasins() {
+      const { data, error } = await supabase
+        .from("magasins")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Erreur Supabase :", error);
+        listeMagasins.innerHTML = `<div class="error">Erreur lors du chargement : ${error.message}</div>`;
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        listeMagasins.innerHTML = "Aucun magasin enregistré.";
+        return;
+      }
+
+      listeMagasins.innerHTML = data
+        .map((magasin) => `<div class="magasin">${magasin.nom}</div>`)
+        .join("");
+    }
+
+    afficherMagasins();
+  </script>
 </body>
 </html>
