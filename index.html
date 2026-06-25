@@ -78,9 +78,15 @@
 
     .filters {
       display: grid;
-      grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
       gap: 12px;
-      margin-bottom: 18px;
+      margin-bottom: 12px;
+    }
+
+    .filters-row-2 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
     }
 
     input, select, textarea {
@@ -96,6 +102,14 @@
     textarea {
       resize: vertical;
       min-height: 90px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: bold;
+      margin-bottom: 6px;
+      color: #374151;
     }
 
     button {
@@ -359,11 +373,18 @@
       text-align: center;
     }
 
+    .stats-line {
+      margin-top: 14px;
+      color: #6b7280;
+      font-size: 14px;
+    }
+
     @media (max-width: 900px) {
       .home-grid,
       .store-grid,
       .detail-layout,
       .filters,
+      .filters-row-2,
       .form-grid,
       .info-grid {
         grid-template-columns: 1fr;
@@ -383,15 +404,25 @@
   <div class="modal-bg" id="storeModal">
     <div class="modal">
       <div class="modal-header">
-        <h2 id="storeModalTitle">Ajouter un magasin</h2>
+        <h2 id="storeModalTitle">Ajouter une fiche client</h2>
         <button class="btn-secondary" onclick="closeStoreModal()">Fermer</button>
       </div>
 
       <form id="storeForm">
         <div class="form-grid">
           <div class="full">
-            <label>Nom du magasin</label>
+            <label>Nom du magasin / client</label>
             <input id="storeName" required />
+          </div>
+
+          <div>
+            <label>Enseigne</label>
+            <input id="storeEnseigne" placeholder="Ex : Carrefour, Proxi, Vival..." />
+          </div>
+
+          <div>
+            <label>Nom du gérant</label>
+            <input id="storeGerant" placeholder="Nom du gérant" />
           </div>
 
           <div>
@@ -410,13 +441,34 @@
           </div>
 
           <div>
-            <label>CA</label>
+            <label>CA HT</label>
             <input id="storeCA" type="number" step="0.01" />
+          </div>
+
+          <div>
+            <label>CA EDP</label>
+            <input id="storeCAEDP" type="number" step="0.01" />
           </div>
 
           <div>
             <label>Date de signature du contrat</label>
             <input id="storeSignature" type="date" />
+          </div>
+
+          <div>
+            <label>Durée du contrat</label>
+            <select id="storeContractDuration">
+              <option value="1">1 an</option>
+              <option value="2">2 ans</option>
+              <option value="3">3 ans</option>
+              <option value="4">4 ans</option>
+              <option value="5">5 ans</option>
+              <option value="6">6 ans</option>
+              <option value="7" selected>7 ans</option>
+              <option value="8">8 ans</option>
+              <option value="9">9 ans</option>
+              <option value="10">10 ans</option>
+            </select>
           </div>
 
           <div class="full">
@@ -490,9 +542,12 @@
     const filters = {
       search: "",
       ville: "",
+      enseigne: "",
       contrat: "",
       caMin: "",
-      caMax: ""
+      caMax: "",
+      caEdpMin: "",
+      caEdpMax: ""
     };
 
     function formatMoney(value) {
@@ -510,6 +565,23 @@
       return new Date(date + "T00:00:00").toLocaleDateString("fr-FR");
     }
 
+    function normalizeText(value) {
+      return String(value || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function getContractDuration(value) {
+      const duration = Number(value);
+
+      if (!Number.isFinite(duration)) return 7;
+      if (duration < 1) return 1;
+      if (duration > 10) return 10;
+
+      return duration;
+    }
+
     function addYears(date, years) {
       const newDate = new Date(date);
       newDate.setFullYear(newDate.getFullYear() + years);
@@ -522,10 +594,11 @@
       return newDate;
     }
 
-    function getContractInfo(dateSignature) {
+    function getContractInfo(dateSignature, dureeContrat) {
       if (!dateSignature) {
         return {
           hasContract: false,
+          duration: getContractDuration(dureeContrat),
           endDate: null,
           alertDate: null,
           isAlert: false,
@@ -534,8 +607,9 @@
         };
       }
 
+      const duration = getContractDuration(dureeContrat);
       const signatureDate = new Date(dateSignature + "T00:00:00");
-      const endDate = addYears(signatureDate, 7);
+      const endDate = addYears(signatureDate, duration);
       const alertDate = subtractMonths(endDate, 8);
       const today = new Date();
 
@@ -544,16 +618,17 @@
       const isAlert = today >= alertDate && today < endDate;
       const isExpired = today >= endDate;
 
-      let message = `Contrat valable jusqu’au ${endDate.toLocaleDateString("fr-FR")}`;
+      let message = `Contrat valable ${duration} an(s), jusqu’au ${endDate.toLocaleDateString("fr-FR")}`;
 
       if (isExpired) {
         message = `Contrat terminé depuis le ${endDate.toLocaleDateString("fr-FR")}`;
       } else if (isAlert) {
-        message = `⚠️ Contrat à renouveler : fin prévue le ${endDate.toLocaleDateString("fr-FR")}`;
+        message = `Contrat à renouveler : fin prévue le ${endDate.toLocaleDateString("fr-FR")}`;
       }
 
       return {
         hasContract: true,
+        duration,
         endDate,
         alertDate,
         isAlert,
@@ -651,57 +726,82 @@
 
     function getFilteredMagasins() {
       return magasins.filter(m => {
-        const search = filters.search.toLowerCase();
+        const search = normalizeText(filters.search);
 
         const matchSearch =
           !search ||
-          String(m.nom || "").toLowerCase().includes(search) ||
-          String(m.ville || "").toLowerCase().includes(search) ||
-          String(m.adresse || "").toLowerCase().includes(search);
+          normalizeText(m.nom).includes(search) ||
+          normalizeText(m.ville).includes(search) ||
+          normalizeText(m.adresse).includes(search) ||
+          normalizeText(m.enseigne).includes(search) ||
+          normalizeText(m.gerant).includes(search);
 
         const matchVille = !filters.ville || m.ville === filters.ville;
+        const matchEnseigne = !filters.enseigne || m.enseigne === filters.enseigne;
+
+        const contractInfo = getContractInfo(m.date_signature, m.duree_contrat);
 
         const matchContrat =
           !filters.contrat ||
           (filters.contrat === "signe" && m.date_signature) ||
           (filters.contrat === "non-signe" && !m.date_signature) ||
-          (filters.contrat === "alerte" && getContractInfo(m.date_signature).isAlert) ||
-          (filters.contrat === "termine" && getContractInfo(m.date_signature).isExpired);
+          (filters.contrat === "alerte" && contractInfo.isAlert) ||
+          (filters.contrat === "termine" && contractInfo.isExpired);
 
         const ca = Number(m.ca || 0);
+        const caEdp = Number(m.ca_edp || 0);
+
         const matchCaMin = !filters.caMin || ca >= Number(filters.caMin);
         const matchCaMax = !filters.caMax || ca <= Number(filters.caMax);
 
-        return matchSearch && matchVille && matchContrat && matchCaMin && matchCaMax;
+        const matchCaEdpMin = !filters.caEdpMin || caEdp >= Number(filters.caEdpMin);
+        const matchCaEdpMax = !filters.caEdpMax || caEdp <= Number(filters.caEdpMax);
+
+        return (
+          matchSearch &&
+          matchVille &&
+          matchEnseigne &&
+          matchContrat &&
+          matchCaMin &&
+          matchCaMax &&
+          matchCaEdpMin &&
+          matchCaEdpMax
+        );
       });
     }
 
     function renderDashboard() {
       const villes = [...new Set(magasins.map(m => m.ville).filter(Boolean))].sort();
-      const filtered = getFilteredMagasins();
+      const enseignes = [...new Set(magasins.map(m => m.enseigne).filter(Boolean))].sort();
 
       app.innerHTML = `
         <div class="topbar">
           <div>
             <h1>${escapeHTML(currentCommercial.nom)}</h1>
-            <p class="subtitle">${magasins.length} magasin(s) enregistré(s)</p>
+            <p class="subtitle" id="dashboardSubtitle">${magasins.length} magasin(s) enregistré(s)</p>
           </div>
 
           <div class="actions">
             <button class="btn-light" id="backHomeBtn">Retour accueil</button>
-            <button id="addStoreBtn">+ Ajouter un magasin</button>
+            <button class="btn-secondary" id="exportBtn">Exporter CSV</button>
+            <button id="addStoreBtn">+ Ajouter une fiche client</button>
           </div>
         </div>
 
         <div class="card">
           <h2>Recherche et filtres</h2>
 
-          <div class="filters">
-            <input id="filterSearch" placeholder="Rechercher un magasin, une ville, une adresse..." value="${escapeHTML(filters.search)}" />
+          <div class="filters" style="margin-top:16px;">
+            <input id="filterSearch" placeholder="Rechercher magasin, enseigne, gérant, ville, adresse..." value="${escapeHTML(filters.search)}" />
 
             <select id="filterVille">
               <option value="">Toutes les villes</option>
               ${villes.map(v => `<option value="${escapeHTML(v)}" ${filters.ville === v ? "selected" : ""}>${escapeHTML(v)}</option>`).join("")}
+            </select>
+
+            <select id="filterEnseigne">
+              <option value="">Toutes les enseignes</option>
+              ${enseignes.map(e => `<option value="${escapeHTML(e)}" ${filters.enseigne === e ? "selected" : ""}>${escapeHTML(e)}</option>`).join("")}
             </select>
 
             <select id="filterContrat">
@@ -711,80 +811,131 @@
               <option value="alerte" ${filters.contrat === "alerte" ? "selected" : ""}>À renouveler</option>
               <option value="termine" ${filters.contrat === "termine" ? "selected" : ""}>Contrat terminé</option>
             </select>
-
-            <input id="filterCaMin" type="number" placeholder="CA min" value="${escapeHTML(filters.caMin)}" />
-            <input id="filterCaMax" type="number" placeholder="CA max" value="${escapeHTML(filters.caMax)}" />
           </div>
+
+          <div class="filters-row-2">
+            <input id="filterCaMin" type="number" placeholder="CA HT min" value="${escapeHTML(filters.caMin)}" />
+            <input id="filterCaMax" type="number" placeholder="CA HT max" value="${escapeHTML(filters.caMax)}" />
+            <input id="filterCaEdpMin" type="number" placeholder="CA EDP min" value="${escapeHTML(filters.caEdpMin)}" />
+            <input id="filterCaEdpMax" type="number" placeholder="CA EDP max" value="${escapeHTML(filters.caEdpMax)}" />
+          </div>
+
+          <div class="actions" style="margin-top:14px;">
+            <button class="btn-light" id="resetFiltersBtn">Réinitialiser les filtres</button>
+          </div>
+
+          <div class="stats-line" id="filterStats"></div>
         </div>
 
-        <div class="store-grid">
-          ${
-            filtered.length === 0
-              ? `<div class="card empty">Aucun magasin ne correspond à ta recherche.</div>`
-              : filtered.map(m => {
-                  const latestVisit = getLatestVisit(m.id);
-                  const contractInfo = getContractInfo(m.date_signature);
-
-                  let badgeClass = "badge-gray";
-                  let badgeText = "Contrat non signé";
-
-                  if (contractInfo.isExpired) {
-                    badgeClass = "badge-red";
-                    badgeText = "Contrat terminé";
-                  } else if (contractInfo.isAlert) {
-                    badgeClass = "badge-orange";
-                    badgeText = "Contrat à renouveler";
-                  } else if (m.date_signature) {
-                    badgeClass = "badge-green";
-                    badgeText = "Contrat signé";
-                  }
-
-                  return `
-                    <div class="store-card" data-store="${m.id}">
-                      <div class="store-name">${escapeHTML(m.nom)}</div>
-                      <div class="store-meta">
-                        Ville : ${escapeHTML(m.ville || "Non renseignée")}<br>
-                        CA : ${formatMoney(m.ca)}<br>
-                        Dernière visite : ${latestVisit ? formatDate(latestVisit.date_visite) : "Aucune visite"}<br>
-                        ${contractInfo.endDate ? `Fin contrat : ${contractInfo.endDate.toLocaleDateString("fr-FR")}` : ""}
-                      </div>
-                      <span class="badge ${badgeClass}">
-                        ${badgeText}
-                      </span>
-                    </div>
-                  `;
-                }).join("")
-          }
-        </div>
+        <div class="store-grid" id="storeGrid"></div>
       `;
 
       document.getElementById("backHomeBtn").addEventListener("click", renderHome);
       document.getElementById("addStoreBtn").addEventListener("click", () => openStoreModal());
+      document.getElementById("exportBtn").addEventListener("click", exportFilteredCSV);
+      document.getElementById("resetFiltersBtn").addEventListener("click", resetFilters);
 
       document.getElementById("filterSearch").addEventListener("input", e => {
         filters.search = e.target.value;
-        renderDashboard();
+        renderStoreGrid();
       });
 
       document.getElementById("filterVille").addEventListener("change", e => {
         filters.ville = e.target.value;
-        renderDashboard();
+        renderStoreGrid();
+      });
+
+      document.getElementById("filterEnseigne").addEventListener("change", e => {
+        filters.enseigne = e.target.value;
+        renderStoreGrid();
       });
 
       document.getElementById("filterContrat").addEventListener("change", e => {
         filters.contrat = e.target.value;
-        renderDashboard();
+        renderStoreGrid();
       });
 
       document.getElementById("filterCaMin").addEventListener("input", e => {
         filters.caMin = e.target.value;
-        renderDashboard();
+        renderStoreGrid();
       });
 
       document.getElementById("filterCaMax").addEventListener("input", e => {
         filters.caMax = e.target.value;
-        renderDashboard();
+        renderStoreGrid();
       });
+
+      document.getElementById("filterCaEdpMin").addEventListener("input", e => {
+        filters.caEdpMin = e.target.value;
+        renderStoreGrid();
+      });
+
+      document.getElementById("filterCaEdpMax").addEventListener("input", e => {
+        filters.caEdpMax = e.target.value;
+        renderStoreGrid();
+      });
+
+      renderStoreGrid();
+    }
+
+    function renderStoreGrid() {
+      const filtered = getFilteredMagasins();
+      const storeGrid = document.getElementById("storeGrid");
+      const filterStats = document.getElementById("filterStats");
+      const dashboardSubtitle = document.getElementById("dashboardSubtitle");
+
+      if (!storeGrid) return;
+
+      if (dashboardSubtitle) {
+        dashboardSubtitle.textContent = `${magasins.length} magasin(s) enregistré(s)`;
+      }
+
+      if (filterStats) {
+        filterStats.textContent = `${filtered.length} résultat(s) affiché(s) sur ${magasins.length} magasin(s).`;
+      }
+
+      storeGrid.innerHTML = `
+        ${
+          filtered.length === 0
+            ? `<div class="card empty">Aucun magasin ne correspond à ta recherche.</div>`
+            : filtered.map(m => {
+                const latestVisit = getLatestVisit(m.id);
+                const contractInfo = getContractInfo(m.date_signature, m.duree_contrat);
+
+                let badgeClass = "badge-gray";
+                let badgeText = "Contrat non signé";
+
+                if (contractInfo.isExpired) {
+                  badgeClass = "badge-red";
+                  badgeText = "Contrat terminé";
+                } else if (contractInfo.isAlert) {
+                  badgeClass = "badge-orange";
+                  badgeText = "Contrat à renouveler";
+                } else if (m.date_signature) {
+                  badgeClass = "badge-green";
+                  badgeText = "Contrat signé";
+                }
+
+                return `
+                  <div class="store-card" data-store="${m.id}">
+                    <div class="store-name">${escapeHTML(m.nom)}</div>
+                    <div class="store-meta">
+                      Enseigne : ${escapeHTML(m.enseigne || "Non renseignée")}<br>
+                      Gérant : ${escapeHTML(m.gerant || "Non renseigné")}<br>
+                      Ville : ${escapeHTML(m.ville || "Non renseignée")}<br>
+                      CA HT : ${formatMoney(m.ca)}<br>
+                      CA EDP : ${formatMoney(m.ca_edp)}<br>
+                      Dernière visite : ${latestVisit ? formatDate(latestVisit.date_visite) : "Aucune visite"}<br>
+                      ${contractInfo.endDate ? `Fin contrat : ${contractInfo.endDate.toLocaleDateString("fr-FR")}` : ""}
+                    </div>
+                    <span class="badge ${badgeClass}">
+                      ${badgeText}
+                    </span>
+                  </div>
+                `;
+              }).join("")
+        }
+      `;
 
       document.querySelectorAll("[data-store]").forEach(card => {
         card.addEventListener("click", () => {
@@ -794,7 +945,103 @@
       });
     }
 
+    function resetFilters() {
+      filters.search = "";
+      filters.ville = "";
+      filters.enseigne = "";
+      filters.contrat = "";
+      filters.caMin = "";
+      filters.caMax = "";
+      filters.caEdpMin = "";
+      filters.caEdpMax = "";
+
+      renderDashboard();
+    }
+
+    function csvValue(value) {
+      const text = String(value ?? "").replaceAll('"', '""');
+      return `"${text}"`;
+    }
+
+    function exportFilteredCSV() {
+      const filtered = getFilteredMagasins();
+
+      if (filtered.length === 0) {
+        alert("Aucun résultat à exporter.");
+        return;
+      }
+
+      const headers = [
+        "Commercial",
+        "Nom magasin",
+        "Enseigne",
+        "Nom du gérant",
+        "Ville",
+        "Adresse",
+        "Prix de vente",
+        "CA HT",
+        "CA EDP",
+        "Date signature",
+        "Durée contrat",
+        "Date fin contrat",
+        "Date alerte renouvellement",
+        "Statut contrat",
+        "Dernière visite",
+        "Commentaire dernière visite",
+        "Nombre de visites"
+      ];
+
+      const rows = filtered.map(m => {
+        const contractInfo = getContractInfo(m.date_signature, m.duree_contrat);
+        const latestVisit = getLatestVisit(m.id);
+        const visitCount = visites.filter(v => v.magasin_id === m.id).length;
+
+        return [
+          currentCommercial.nom,
+          m.nom || "",
+          m.enseigne || "",
+          m.gerant || "",
+          m.ville || "",
+          m.adresse || "",
+          m.prix_vente || "",
+          m.ca || "",
+          m.ca_edp || "",
+          m.date_signature || "",
+          `${getContractDuration(m.duree_contrat)} an(s)`,
+          contractInfo.endDate ? contractInfo.endDate.toLocaleDateString("fr-FR") : "",
+          contractInfo.alertDate ? contractInfo.alertDate.toLocaleDateString("fr-FR") : "",
+          contractInfo.message || "",
+          latestVisit ? formatDate(latestVisit.date_visite) : "",
+          latestVisit ? latestVisit.commentaire || "" : "",
+          visitCount
+        ];
+      });
+
+      const csvContent = [
+        headers.map(csvValue).join(";"),
+        ...rows.map(row => row.map(csvValue).join(";"))
+      ].join("\n");
+
+      const blob = new Blob(["\uFEFF" + csvContent], {
+        type: "text/csv;charset=utf-8;"
+      });
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const date = new Date().toISOString().slice(0, 10);
+
+      link.href = url;
+      link.download = `export-crm-${currentCommercial.id}-${date}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      URL.revokeObjectURL(url);
+    }
+
     async function refreshSelectedMagasin() {
+      if (!selectedMagasin) return;
+
       const { data, error } = await supabase
         .from("magasins")
         .select("*")
@@ -827,7 +1074,7 @@
       }
 
       const magasinVisites = visitesData || [];
-      const contractInfo = getContractInfo(selectedMagasin.date_signature);
+      const contractInfo = getContractInfo(selectedMagasin.date_signature, selectedMagasin.duree_contrat);
 
       app.innerHTML = `
         <div class="topbar">
@@ -864,9 +1111,19 @@
           </div>
 
           <div class="card">
-            <h2>Fiche magasin</h2>
+            <h2>Fiche client / magasin</h2>
 
             <div class="info-grid">
+              <div class="info-item">
+                <div class="info-label">Enseigne</div>
+                <div class="info-value">${escapeHTML(selectedMagasin.enseigne || "Non renseignée")}</div>
+              </div>
+
+              <div class="info-item">
+                <div class="info-label">Nom du gérant</div>
+                <div class="info-value">${escapeHTML(selectedMagasin.gerant || "Non renseigné")}</div>
+              </div>
+
               <div class="info-item">
                 <div class="info-label">Adresse</div>
                 <div class="info-value">${escapeHTML(selectedMagasin.adresse || "Non renseignée")}</div>
@@ -883,13 +1140,23 @@
               </div>
 
               <div class="info-item">
-                <div class="info-label">CA</div>
+                <div class="info-label">CA HT</div>
                 <div class="info-value">${formatMoney(selectedMagasin.ca)}</div>
+              </div>
+
+              <div class="info-item">
+                <div class="info-label">CA EDP</div>
+                <div class="info-value">${formatMoney(selectedMagasin.ca_edp)}</div>
               </div>
 
               <div class="info-item">
                 <div class="info-label">Date de signature du contrat</div>
                 <div class="info-value">${formatDate(selectedMagasin.date_signature)}</div>
+              </div>
+
+              <div class="info-item">
+                <div class="info-label">Durée du contrat</div>
+                <div class="info-value">${getContractDuration(selectedMagasin.duree_contrat)} an(s)</div>
               </div>
 
               <div class="info-item">
@@ -950,15 +1217,21 @@
     function openStoreModal(magasin = null) {
       editingMagasin = magasin;
 
-      document.getElementById("storeModalTitle").textContent = magasin ? "Modifier le magasin" : "Ajouter un magasin";
+      document.getElementById("storeModalTitle").textContent = magasin ? "Modifier la fiche client" : "Ajouter une fiche client";
+
       document.getElementById("storeName").value = magasin?.nom || "";
+      document.getElementById("storeEnseigne").value = magasin?.enseigne || "";
+      document.getElementById("storeGerant").value = magasin?.gerant || "";
       document.getElementById("storeCity").value = magasin?.ville || "";
       document.getElementById("storeAddress").value = magasin?.adresse || "";
       document.getElementById("storePrice").value = magasin?.prix_vente || "";
       document.getElementById("storeCA").value = magasin?.ca || "";
+      document.getElementById("storeCAEDP").value = magasin?.ca_edp || "";
       document.getElementById("storeSignature").value = magasin?.date_signature || "";
+      document.getElementById("storeContractDuration").value = getContractDuration(magasin?.duree_contrat);
       document.getElementById("storePhoto").value = "";
       document.getElementById("storeFormMessage").innerHTML = "";
+
       document.getElementById("storeModal").style.display = "flex";
     }
 
@@ -1009,11 +1282,15 @@
         const payload = {
           commercial_id: currentCommercial.id,
           nom: document.getElementById("storeName").value.trim(),
+          enseigne: document.getElementById("storeEnseigne").value.trim() || null,
+          gerant: document.getElementById("storeGerant").value.trim() || null,
           ville: document.getElementById("storeCity").value.trim() || null,
           adresse: document.getElementById("storeAddress").value.trim() || null,
           prix_vente: document.getElementById("storePrice").value || null,
           ca: document.getElementById("storeCA").value || null,
+          ca_edp: document.getElementById("storeCAEDP").value || null,
           date_signature: document.getElementById("storeSignature").value || null,
+          duree_contrat: getContractDuration(document.getElementById("storeContractDuration").value),
           updated_at: new Date().toISOString()
         };
 
@@ -1031,7 +1308,7 @@
           if (error) throw error;
 
           selectedMagasin = { ...selectedMagasin, ...payload };
-          message.innerHTML = `<div class="success">Magasin modifié avec succès.</div>`;
+          message.innerHTML = `<div class="success">Fiche modifiée avec succès.</div>`;
         } else {
           const { data, error } = await supabase
             .from("magasins")
@@ -1042,7 +1319,7 @@
           if (error) throw error;
 
           selectedMagasin = data;
-          message.innerHTML = `<div class="success">Magasin ajouté avec succès.</div>`;
+          message.innerHTML = `<div class="success">Fiche ajoutée avec succès.</div>`;
         }
 
         setTimeout(async () => {
