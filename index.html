@@ -76,17 +76,59 @@
       box-shadow: 0 8px 20px rgba(0,0,0,0.04);
     }
 
-    .filters {
+    .filters-primary {
       display: grid;
-      grid-template-columns: 2fr 1fr 1fr 1fr;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 12px;
-      margin-bottom: 12px;
+      margin-top: 16px;
     }
 
-    .filters-row-2 {
+    .filter-search {
+      grid-column: span 2;
+    }
+
+    .filters-secondary {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 12px;
+      margin-top: 12px;
+    }
+
+    .filter-field label {
+      font-size: 12px;
+      margin-bottom: 5px;
+      color: #6b7280;
+    }
+
+    .filter-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    .advanced-filters {
+      display: none;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .advanced-filters.open {
+      display: block;
+    }
+
+    .advanced-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .advanced-title {
+      margin-bottom: 12px;
+      font-size: 15px;
+      color: #374151;
     }
 
     input, select, textarea {
@@ -435,11 +477,16 @@
       .home-grid,
       .store-grid,
       .detail-layout,
-      .filters,
-      .filters-row-2,
+      .filters-primary,
+      .filters-secondary,
+      .advanced-grid,
       .form-grid,
       .info-grid {
         grid-template-columns: 1fr;
+      }
+
+      .filter-search {
+        grid-column: auto;
       }
 
       .topbar {
@@ -669,18 +716,29 @@
     let visites = [];
     let selectedMagasin = null;
     let editingMagasin = null;
+    let advancedFiltersOpen = false;
 
     const app = document.getElementById("app");
 
     const filters = {
       search: "",
+      entrepot: "",
+      prevision: "",
       ville: "",
       enseigne: "",
       contrat: "",
+      saisonnier: "",
+      camping: "",
+      visite: "",
       caMin: "",
       caMax: "",
       caEdpMin: "",
-      caEdpMax: ""
+      caEdpMax: "",
+      surfaceMin: "",
+      surfaceMax: "",
+      visitAfter: "",
+      visitBefore: "",
+      sort: "recent"
     };
 
     function formatMoney(value) {
@@ -885,7 +943,16 @@
     }
 
     function getFilteredMagasins() {
-      return magasins.filter(m => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const thirtyDaysAgo = new Date(today);
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const threeMonthsAgo = subtractMonths(today, 3);
+      const sixMonthsAgo = subtractMonths(today, 6);
+
+      const filtered = magasins.filter(m => {
         const search = normalizeText(filters.search);
 
         const matchSearch =
@@ -894,8 +961,12 @@
           normalizeText(m.ville).includes(search) ||
           normalizeText(m.adresse).includes(search) ||
           normalizeText(m.enseigne).includes(search) ||
-          normalizeText(m.gerant).includes(search);
+          normalizeText(m.gerant).includes(search) ||
+          normalizeText(m.entrepot).includes(search) ||
+          normalizeText(m.prevision).includes(search);
 
+        const matchEntrepot = !filters.entrepot || m.entrepot === filters.entrepot;
+        const matchPrevision = !filters.prevision || m.prevision === filters.prevision;
         const matchVille = !filters.ville || m.ville === filters.ville;
         const matchEnseigne = !filters.enseigne || m.enseigne === filters.enseigne;
 
@@ -903,36 +974,178 @@
 
         const matchContrat =
           !filters.contrat ||
-          (filters.contrat === "signe" && m.date_signature) ||
+          (filters.contrat === "signe" && m.date_signature && !contractInfo.isAlert && !contractInfo.isExpired) ||
           (filters.contrat === "non-signe" && !m.date_signature) ||
           (filters.contrat === "alerte" && contractInfo.isAlert) ||
           (filters.contrat === "termine" && contractInfo.isExpired);
 
+        const matchSaisonnier =
+          !filters.saisonnier ||
+          (filters.saisonnier === "oui" && m.saisonnier === true) ||
+          (filters.saisonnier === "non" && m.saisonnier !== true);
+
+        const matchCamping =
+          !filters.camping ||
+          (filters.camping === "oui" && m.camping === true) ||
+          (filters.camping === "non" && m.camping !== true);
+
         const ca = Number(m.ca || 0);
         const caEdp = Number(m.ca_edp || 0);
+        const hasSurface = m.surface_m2 !== null && m.surface_m2 !== undefined && m.surface_m2 !== "";
+        const surface = hasSurface ? Number(m.surface_m2) : null;
 
         const matchCaMin = !filters.caMin || ca >= Number(filters.caMin);
         const matchCaMax = !filters.caMax || ca <= Number(filters.caMax);
-
         const matchCaEdpMin = !filters.caEdpMin || caEdp >= Number(filters.caEdpMin);
         const matchCaEdpMax = !filters.caEdpMax || caEdp <= Number(filters.caEdpMax);
+        const matchSurfaceMin = !filters.surfaceMin || (hasSurface && surface >= Number(filters.surfaceMin));
+        const matchSurfaceMax = !filters.surfaceMax || (hasSurface && surface <= Number(filters.surfaceMax));
+
+        const latestVisit = getLatestVisit(m.id);
+        const latestVisitDate = latestVisit?.date_visite
+          ? new Date(latestVisit.date_visite + "T00:00:00")
+          : null;
+
+        let matchVisite = true;
+
+        if (filters.visite === "jamais") {
+          matchVisite = !latestVisit;
+        } else if (filters.visite === "moins-30") {
+          matchVisite = Boolean(latestVisitDate && latestVisitDate >= thirtyDaysAgo);
+        } else if (filters.visite === "moins-3-mois") {
+          matchVisite = Boolean(latestVisitDate && latestVisitDate >= threeMonthsAgo);
+        } else if (filters.visite === "plus-3-mois") {
+          matchVisite = Boolean(latestVisitDate && latestVisitDate < threeMonthsAgo);
+        } else if (filters.visite === "plus-6-mois") {
+          matchVisite = Boolean(latestVisitDate && latestVisitDate < sixMonthsAgo);
+        }
+
+        const matchVisitAfter =
+          !filters.visitAfter ||
+          Boolean(latestVisit?.date_visite && latestVisit.date_visite >= filters.visitAfter);
+
+        const matchVisitBefore =
+          !filters.visitBefore ||
+          Boolean(latestVisit?.date_visite && latestVisit.date_visite <= filters.visitBefore);
 
         return (
           matchSearch &&
+          matchEntrepot &&
+          matchPrevision &&
           matchVille &&
           matchEnseigne &&
           matchContrat &&
+          matchSaisonnier &&
+          matchCamping &&
+          matchVisite &&
           matchCaMin &&
           matchCaMax &&
           matchCaEdpMin &&
-          matchCaEdpMax
+          matchCaEdpMax &&
+          matchSurfaceMin &&
+          matchSurfaceMax &&
+          matchVisitAfter &&
+          matchVisitBefore
         );
       });
+
+      const compareText = (a, b) =>
+        String(a || "").localeCompare(String(b || ""), "fr", { sensitivity: "base" });
+
+      const compareNumber = (aValue, bValue, direction = "asc") => {
+        const aMissing = aValue === null || aValue === undefined || aValue === "";
+        const bMissing = bValue === null || bValue === undefined || bValue === "";
+
+        if (aMissing && bMissing) return 0;
+        if (aMissing) return 1;
+        if (bMissing) return -1;
+
+        const difference = Number(aValue) - Number(bValue);
+        return direction === "desc" ? -difference : difference;
+      };
+
+      const latestVisitTime = magasin => {
+        const visit = getLatestVisit(magasin.id);
+        return visit?.date_visite
+          ? new Date(visit.date_visite + "T00:00:00").getTime()
+          : null;
+      };
+
+      filtered.sort((a, b) => {
+        if (filters.sort === "nom") {
+          return compareText(a.nom, b.nom);
+        }
+
+        if (filters.sort === "ca-desc") {
+          return compareNumber(a.ca, b.ca, "desc");
+        }
+
+        if (filters.sort === "ca-asc") {
+          return compareNumber(a.ca, b.ca, "asc");
+        }
+
+        if (filters.sort === "ca-edp-desc") {
+          return compareNumber(a.ca_edp, b.ca_edp, "desc");
+        }
+
+        if (filters.sort === "ca-edp-asc") {
+          return compareNumber(a.ca_edp, b.ca_edp, "asc");
+        }
+
+        if (filters.sort === "surface-desc") {
+          return compareNumber(a.surface_m2, b.surface_m2, "desc");
+        }
+
+        if (filters.sort === "surface-asc") {
+          return compareNumber(a.surface_m2, b.surface_m2, "asc");
+        }
+
+        if (filters.sort === "visite-recente") {
+          return compareNumber(latestVisitTime(a), latestVisitTime(b), "desc");
+        }
+
+        if (filters.sort === "jamais-visite") {
+          const aNever = latestVisitTime(a) === null;
+          const bNever = latestVisitTime(b) === null;
+
+          if (aNever !== bNever) return aNever ? -1 : 1;
+          return compareText(a.nom, b.nom);
+        }
+
+        if (filters.sort === "fin-contrat") {
+          const aEnd = getContractInfo(a.date_signature, a.duree_contrat).endDate?.getTime() ?? null;
+          const bEnd = getContractInfo(b.date_signature, b.duree_contrat).endDate?.getTime() ?? null;
+          return compareNumber(aEnd, bEnd, "asc");
+        }
+
+        return compareNumber(
+          a.created_at ? new Date(a.created_at).getTime() : null,
+          b.created_at ? new Date(b.created_at).getTime() : null,
+          "desc"
+        );
+      });
+
+      return filtered;
     }
 
     function renderDashboard() {
       const villes = [...new Set(magasins.map(m => m.ville).filter(Boolean))].sort();
       const enseignes = [...new Set(magasins.map(m => m.enseigne).filter(Boolean))].sort();
+
+      const advancedFiltersActive = Boolean(
+        filters.caMin ||
+        filters.caMax ||
+        filters.caEdpMin ||
+        filters.caEdpMax ||
+        filters.surfaceMin ||
+        filters.surfaceMax ||
+        filters.visitAfter ||
+        filters.visitBefore
+      );
+
+      if (advancedFiltersActive) {
+        advancedFiltersOpen = true;
+      }
 
       app.innerHTML = `
         <div class="topbar">
@@ -951,37 +1164,162 @@
         <div class="card">
           <h2>Recherche et filtres</h2>
 
-          <div class="filters" style="margin-top:16px;">
-            <input id="filterSearch" placeholder="Rechercher magasin, enseigne, gérant, ville, adresse..." value="${escapeHTML(filters.search)}" />
+          <div class="filters-primary">
+            <div class="filter-field filter-search">
+              <label for="filterSearch">Recherche générale</label>
+              <input id="filterSearch" placeholder="Magasin, enseigne, gérant, ville, adresse..." value="${escapeHTML(filters.search)}" />
+            </div>
 
-            <select id="filterVille">
-              <option value="">Toutes les villes</option>
-              ${villes.map(v => `<option value="${escapeHTML(v)}" ${filters.ville === v ? "selected" : ""}>${escapeHTML(v)}</option>`).join("")}
-            </select>
+            <div class="filter-field">
+              <label for="filterEntrepot">Entrepôt</label>
+              <select id="filterEntrepot">
+                <option value="">Tous les entrepôts</option>
+                <option value="Magne C" ${filters.entrepot === "Magne C" ? "selected" : ""}>Magne C</option>
+                <option value="Magne M" ${filters.entrepot === "Magne M" ? "selected" : ""}>Magne M</option>
+                <option value="Salon" ${filters.entrepot === "Salon" ? "selected" : ""}>Salon</option>
+                <option value="Macon" ${filters.entrepot === "Macon" ? "selected" : ""}>Macon</option>
+                <option value="Montel" ${filters.entrepot === "Montel" ? "selected" : ""}>Montel</option>
+                <option value="Lapalus" ${filters.entrepot === "Lapalus" ? "selected" : ""}>Lapalus</option>
+              </select>
+            </div>
 
-            <select id="filterEnseigne">
-              <option value="">Toutes les enseignes</option>
-              ${enseignes.map(e => `<option value="${escapeHTML(e)}" ${filters.enseigne === e ? "selected" : ""}>${escapeHTML(e)}</option>`).join("")}
-            </select>
+            <div class="filter-field">
+              <label for="filterPrevision">Prévision</label>
+              <select id="filterPrevision">
+                <option value="">Toutes les prévisions</option>
+                <option value="Ouverture" ${filters.prevision === "Ouverture" ? "selected" : ""}>Ouverture</option>
+                <option value="Reprise" ${filters.prevision === "Reprise" ? "selected" : ""}>Reprise</option>
+              </select>
+            </div>
 
-            <select id="filterContrat">
-              <option value="">Tous les contrats</option>
-              <option value="signe" ${filters.contrat === "signe" ? "selected" : ""}>Contrat signé</option>
-              <option value="non-signe" ${filters.contrat === "non-signe" ? "selected" : ""}>Non signé</option>
-              <option value="alerte" ${filters.contrat === "alerte" ? "selected" : ""}>À renouveler</option>
-              <option value="termine" ${filters.contrat === "termine" ? "selected" : ""}>Contrat terminé</option>
-            </select>
+            <div class="filter-field">
+              <label for="filterVille">Ville</label>
+              <select id="filterVille">
+                <option value="">Toutes les villes</option>
+                ${villes.map(v => `<option value="${escapeHTML(v)}" ${filters.ville === v ? "selected" : ""}>${escapeHTML(v)}</option>`).join("")}
+              </select>
+            </div>
+
+            <div class="filter-field">
+              <label for="filterEnseigne">Enseigne</label>
+              <select id="filterEnseigne">
+                <option value="">Toutes les enseignes</option>
+                ${enseignes.map(e => `<option value="${escapeHTML(e)}" ${filters.enseigne === e ? "selected" : ""}>${escapeHTML(e)}</option>`).join("")}
+              </select>
+            </div>
+
+            <div class="filter-field">
+              <label for="filterContrat">Contrat</label>
+              <select id="filterContrat">
+                <option value="">Tous les contrats</option>
+                <option value="signe" ${filters.contrat === "signe" ? "selected" : ""}>Contrat signé et valide</option>
+                <option value="non-signe" ${filters.contrat === "non-signe" ? "selected" : ""}>Non signé</option>
+                <option value="alerte" ${filters.contrat === "alerte" ? "selected" : ""}>À renouveler</option>
+                <option value="termine" ${filters.contrat === "termine" ? "selected" : ""}>Contrat terminé</option>
+              </select>
+            </div>
+
+            <div class="filter-field">
+              <label for="filterSort">Trier les résultats</label>
+              <select id="filterSort">
+                <option value="recent" ${filters.sort === "recent" ? "selected" : ""}>Fiches les plus récentes</option>
+                <option value="nom" ${filters.sort === "nom" ? "selected" : ""}>Nom du magasin A à Z</option>
+                <option value="ca-desc" ${filters.sort === "ca-desc" ? "selected" : ""}>CA HT décroissant</option>
+                <option value="ca-asc" ${filters.sort === "ca-asc" ? "selected" : ""}>CA HT croissant</option>
+                <option value="ca-edp-desc" ${filters.sort === "ca-edp-desc" ? "selected" : ""}>CA EDP décroissant</option>
+                <option value="ca-edp-asc" ${filters.sort === "ca-edp-asc" ? "selected" : ""}>CA EDP croissant</option>
+                <option value="surface-desc" ${filters.sort === "surface-desc" ? "selected" : ""}>Surface décroissante</option>
+                <option value="surface-asc" ${filters.sort === "surface-asc" ? "selected" : ""}>Surface croissante</option>
+                <option value="visite-recente" ${filters.sort === "visite-recente" ? "selected" : ""}>Dernière visite la plus récente</option>
+                <option value="jamais-visite" ${filters.sort === "jamais-visite" ? "selected" : ""}>Jamais visités en premier</option>
+                <option value="fin-contrat" ${filters.sort === "fin-contrat" ? "selected" : ""}>Fin de contrat la plus proche</option>
+              </select>
+            </div>
           </div>
 
-          <div class="filters-row-2">
-            <input id="filterCaMin" type="number" placeholder="CA HT min" value="${escapeHTML(filters.caMin)}" />
-            <input id="filterCaMax" type="number" placeholder="CA HT max" value="${escapeHTML(filters.caMax)}" />
-            <input id="filterCaEdpMin" type="number" placeholder="CA EDP min" value="${escapeHTML(filters.caEdpMin)}" />
-            <input id="filterCaEdpMax" type="number" placeholder="CA EDP max" value="${escapeHTML(filters.caEdpMax)}" />
+          <div class="filters-secondary">
+            <div class="filter-field">
+              <label for="filterSaisonnier">Magasin saisonnier</label>
+              <select id="filterSaisonnier">
+                <option value="">Tous les magasins</option>
+                <option value="oui" ${filters.saisonnier === "oui" ? "selected" : ""}>Saisonnier</option>
+                <option value="non" ${filters.saisonnier === "non" ? "selected" : ""}>Non saisonnier</option>
+              </select>
+            </div>
+
+            <div class="filter-field">
+              <label for="filterCamping">Camping</label>
+              <select id="filterCamping">
+                <option value="">Tous les magasins</option>
+                <option value="oui" ${filters.camping === "oui" ? "selected" : ""}>Camping</option>
+                <option value="non" ${filters.camping === "non" ? "selected" : ""}>Hors camping</option>
+              </select>
+            </div>
+
+            <div class="filter-field">
+              <label for="filterVisite">Suivi des visites</label>
+              <select id="filterVisite">
+                <option value="">Toutes les visites</option>
+                <option value="jamais" ${filters.visite === "jamais" ? "selected" : ""}>Jamais visités</option>
+                <option value="moins-30" ${filters.visite === "moins-30" ? "selected" : ""}>Visités dans les 30 derniers jours</option>
+                <option value="moins-3-mois" ${filters.visite === "moins-3-mois" ? "selected" : ""}>Visités dans les 3 derniers mois</option>
+                <option value="plus-3-mois" ${filters.visite === "plus-3-mois" ? "selected" : ""}>Non visités depuis plus de 3 mois</option>
+                <option value="plus-6-mois" ${filters.visite === "plus-6-mois" ? "selected" : ""}>Non visités depuis plus de 6 mois</option>
+              </select>
+            </div>
           </div>
 
-          <div class="actions" style="margin-top:14px;">
-            <button class="btn-light" id="resetFiltersBtn">Réinitialiser les filtres</button>
+          <div class="filter-toolbar">
+            <button type="button" class="btn-secondary" id="moreFiltersBtn">
+              ${advancedFiltersOpen ? "Masquer les filtres avancés" : "+ Plus de filtres"}
+            </button>
+            <button type="button" class="btn-light" id="resetFiltersBtn">Réinitialiser les filtres</button>
+          </div>
+
+          <div id="advancedFilters" class="advanced-filters ${advancedFiltersOpen ? "open" : ""}">
+            <div class="advanced-title"><strong>Filtres avancés</strong></div>
+
+            <div class="advanced-grid">
+              <div class="filter-field">
+                <label for="filterCaMin">CA HT minimum</label>
+                <input id="filterCaMin" type="number" min="0" placeholder="Ex : 100000" value="${escapeHTML(filters.caMin)}" />
+              </div>
+
+              <div class="filter-field">
+                <label for="filterCaMax">CA HT maximum</label>
+                <input id="filterCaMax" type="number" min="0" placeholder="Ex : 500000" value="${escapeHTML(filters.caMax)}" />
+              </div>
+
+              <div class="filter-field">
+                <label for="filterCaEdpMin">CA EDP minimum</label>
+                <input id="filterCaEdpMin" type="number" min="0" placeholder="Ex : 50000" value="${escapeHTML(filters.caEdpMin)}" />
+              </div>
+
+              <div class="filter-field">
+                <label for="filterCaEdpMax">CA EDP maximum</label>
+                <input id="filterCaEdpMax" type="number" min="0" placeholder="Ex : 250000" value="${escapeHTML(filters.caEdpMax)}" />
+              </div>
+
+              <div class="filter-field">
+                <label for="filterSurfaceMin">Surface minimum (m²)</label>
+                <input id="filterSurfaceMin" type="number" min="0" step="0.01" placeholder="Ex : 100" value="${escapeHTML(filters.surfaceMin)}" />
+              </div>
+
+              <div class="filter-field">
+                <label for="filterSurfaceMax">Surface maximum (m²)</label>
+                <input id="filterSurfaceMax" type="number" min="0" step="0.01" placeholder="Ex : 500" value="${escapeHTML(filters.surfaceMax)}" />
+              </div>
+
+              <div class="filter-field">
+                <label for="filterVisitAfter">Dernière visite après le</label>
+                <input id="filterVisitAfter" type="date" value="${escapeHTML(filters.visitAfter)}" />
+              </div>
+
+              <div class="filter-field">
+                <label for="filterVisitBefore">Dernière visite avant le</label>
+                <input id="filterVisitBefore" type="date" value="${escapeHTML(filters.visitBefore)}" />
+              </div>
+            </div>
           </div>
 
           <div class="stats-line" id="filterStats"></div>
@@ -995,45 +1333,39 @@
       document.getElementById("exportBtn").addEventListener("click", exportFilteredCSV);
       document.getElementById("resetFiltersBtn").addEventListener("click", resetFilters);
 
-      document.getElementById("filterSearch").addEventListener("input", e => {
-        filters.search = e.target.value;
-        renderStoreGrid();
+      document.getElementById("moreFiltersBtn").addEventListener("click", () => {
+        advancedFiltersOpen = !advancedFiltersOpen;
+        document.getElementById("advancedFilters").classList.toggle("open", advancedFiltersOpen);
+        document.getElementById("moreFiltersBtn").textContent = advancedFiltersOpen
+          ? "Masquer les filtres avancés"
+          : "+ Plus de filtres";
       });
 
-      document.getElementById("filterVille").addEventListener("change", e => {
-        filters.ville = e.target.value;
-        renderStoreGrid();
-      });
+      const bindFilter = (id, key, eventName = "change") => {
+        document.getElementById(id).addEventListener(eventName, e => {
+          filters[key] = e.target.value;
+          renderStoreGrid();
+        });
+      };
 
-      document.getElementById("filterEnseigne").addEventListener("change", e => {
-        filters.enseigne = e.target.value;
-        renderStoreGrid();
-      });
-
-      document.getElementById("filterContrat").addEventListener("change", e => {
-        filters.contrat = e.target.value;
-        renderStoreGrid();
-      });
-
-      document.getElementById("filterCaMin").addEventListener("input", e => {
-        filters.caMin = e.target.value;
-        renderStoreGrid();
-      });
-
-      document.getElementById("filterCaMax").addEventListener("input", e => {
-        filters.caMax = e.target.value;
-        renderStoreGrid();
-      });
-
-      document.getElementById("filterCaEdpMin").addEventListener("input", e => {
-        filters.caEdpMin = e.target.value;
-        renderStoreGrid();
-      });
-
-      document.getElementById("filterCaEdpMax").addEventListener("input", e => {
-        filters.caEdpMax = e.target.value;
-        renderStoreGrid();
-      });
+      bindFilter("filterSearch", "search", "input");
+      bindFilter("filterEntrepot", "entrepot");
+      bindFilter("filterPrevision", "prevision");
+      bindFilter("filterVille", "ville");
+      bindFilter("filterEnseigne", "enseigne");
+      bindFilter("filterContrat", "contrat");
+      bindFilter("filterSort", "sort");
+      bindFilter("filterSaisonnier", "saisonnier");
+      bindFilter("filterCamping", "camping");
+      bindFilter("filterVisite", "visite");
+      bindFilter("filterCaMin", "caMin", "input");
+      bindFilter("filterCaMax", "caMax", "input");
+      bindFilter("filterCaEdpMin", "caEdpMin", "input");
+      bindFilter("filterCaEdpMax", "caEdpMax", "input");
+      bindFilter("filterSurfaceMin", "surfaceMin", "input");
+      bindFilter("filterSurfaceMax", "surfaceMax", "input");
+      bindFilter("filterVisitAfter", "visitAfter");
+      bindFilter("filterVisitBefore", "visitBefore");
 
       renderStoreGrid();
     }
@@ -1110,13 +1442,24 @@
 
     function resetFilters() {
       filters.search = "";
+      filters.entrepot = "";
+      filters.prevision = "";
       filters.ville = "";
       filters.enseigne = "";
       filters.contrat = "";
+      filters.saisonnier = "";
+      filters.camping = "";
+      filters.visite = "";
       filters.caMin = "";
       filters.caMax = "";
       filters.caEdpMin = "";
       filters.caEdpMax = "";
+      filters.surfaceMin = "";
+      filters.surfaceMax = "";
+      filters.visitAfter = "";
+      filters.visitBefore = "";
+      filters.sort = "recent";
+      advancedFiltersOpen = false;
 
       renderDashboard();
     }
