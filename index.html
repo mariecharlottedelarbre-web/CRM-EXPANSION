@@ -348,6 +348,58 @@
       grid-column: 1 / -1;
     }
 
+    .checkbox-card {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .checkbox-row input,
+    .month-option input {
+      width: auto;
+      margin: 0;
+    }
+
+    .conditional-section {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .conditional-section.hidden {
+      display: none;
+    }
+
+    .month-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .month-option {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px;
+      margin: 0;
+      background: white;
+      border: 1px solid #d1d5db;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: normal;
+      cursor: pointer;
+    }
+
     .message {
       margin-top: 12px;
       font-size: 14px;
@@ -393,6 +445,10 @@
       .topbar {
         align-items: flex-start;
         flex-direction: column;
+      }
+
+      .month-grid {
+        grid-template-columns: repeat(2, 1fr);
       }
     }
   </style>
@@ -448,6 +504,83 @@
           <div>
             <label>CA EDP</label>
             <input id="storeCAEDP" type="number" step="0.01" />
+          </div>
+
+          <div>
+            <label>Entrepôt</label>
+            <select id="storeEntrepot">
+              <option value="">Non renseigné</option>
+              <option value="Magne C">Magne C</option>
+              <option value="Magne M">Magne M</option>
+              <option value="Salon">Salon</option>
+              <option value="Macon">Macon</option>
+              <option value="Montel">Montel</option>
+              <option value="Lapalus">Lapalus</option>
+            </select>
+          </div>
+
+          <div>
+            <label>Prévision</label>
+            <select id="storePrevision">
+              <option value="">Non renseignée</option>
+              <option value="Ouverture">Ouverture</option>
+              <option value="Reprise">Reprise</option>
+            </select>
+          </div>
+
+          <div>
+            <label>Surface du magasin (m²)</label>
+            <input id="storeSurfaceM2" type="number" min="0" step="0.01" placeholder="Ex : 250" />
+          </div>
+
+          <div class="full checkbox-card">
+            <label class="checkbox-row">
+              <input id="storeSaisonnier" type="checkbox" />
+              <span>Magasin saisonnier</span>
+            </label>
+
+            <div id="seasonMonthsSection" class="conditional-section hidden">
+              <label>Mois d’ouverture du magasin</label>
+              <div class="month-grid">
+                <label class="month-option"><input type="checkbox" name="moisSaisonnier" value="Janvier" />Janvier</label>
+                <label class="month-option"><input type="checkbox" name="moisSaisonnier" value="Février" />Février</label>
+                <label class="month-option"><input type="checkbox" name="moisSaisonnier" value="Mars" />Mars</label>
+                <label class="month-option"><input type="checkbox" name="moisSaisonnier" value="Avril" />Avril</label>
+                <label class="month-option"><input type="checkbox" name="moisSaisonnier" value="Mai" />Mai</label>
+                <label class="month-option"><input type="checkbox" name="moisSaisonnier" value="Juin" />Juin</label>
+                <label class="month-option"><input type="checkbox" name="moisSaisonnier" value="Juillet" />Juillet</label>
+                <label class="month-option"><input type="checkbox" name="moisSaisonnier" value="Août" />Août</label>
+                <label class="month-option"><input type="checkbox" name="moisSaisonnier" value="Septembre" />Septembre</label>
+                <label class="month-option"><input type="checkbox" name="moisSaisonnier" value="Octobre" />Octobre</label>
+                <label class="month-option"><input type="checkbox" name="moisSaisonnier" value="Novembre" />Novembre</label>
+                <label class="month-option"><input type="checkbox" name="moisSaisonnier" value="Décembre" />Décembre</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="full checkbox-card">
+            <label class="checkbox-row">
+              <input id="storeCamping" type="checkbox" />
+              <span>Magasin situé dans un camping</span>
+            </label>
+
+            <div id="campingMonthsSection" class="conditional-section hidden">
+              <label>Mois d’ouverture du camping</label>
+              <div class="month-grid">
+                <label class="month-option"><input type="checkbox" name="moisCamping" value="Janvier" />Janvier</label>
+                <label class="month-option"><input type="checkbox" name="moisCamping" value="Février" />Février</label>
+                <label class="month-option"><input type="checkbox" name="moisCamping" value="Mars" />Mars</label>
+                <label class="month-option"><input type="checkbox" name="moisCamping" value="Avril" />Avril</label>
+                <label class="month-option"><input type="checkbox" name="moisCamping" value="Mai" />Mai</label>
+                <label class="month-option"><input type="checkbox" name="moisCamping" value="Juin" />Juin</label>
+                <label class="month-option"><input type="checkbox" name="moisCamping" value="Juillet" />Juillet</label>
+                <label class="month-option"><input type="checkbox" name="moisCamping" value="Août" />Août</label>
+                <label class="month-option"><input type="checkbox" name="moisCamping" value="Septembre" />Septembre</label>
+                <label class="month-option"><input type="checkbox" name="moisCamping" value="Octobre" />Octobre</label>
+                <label class="month-option"><input type="checkbox" name="moisCamping" value="Novembre" />Novembre</label>
+                <label class="month-option"><input type="checkbox" name="moisCamping" value="Décembre" />Décembre</label>
+              </div>
+            </div>
           </div>
 
           <div>
@@ -570,6 +703,33 @@
         .toLowerCase()
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function getSelectedMonths(groupName) {
+      return [...document.querySelectorAll(`input[name="${groupName}"]:checked`)]
+        .map(input => input.value);
+    }
+
+    function setSelectedMonths(groupName, selectedMonths = []) {
+      const selected = Array.isArray(selectedMonths) ? selectedMonths : [];
+
+      document.querySelectorAll(`input[name="${groupName}"]`).forEach(input => {
+        input.checked = selected.includes(input.value);
+      });
+    }
+
+    function toggleConditionalSection(checkboxId, sectionId) {
+      const checkbox = document.getElementById(checkboxId);
+      const section = document.getElementById(sectionId);
+
+      if (!checkbox || !section) return;
+      section.classList.toggle("hidden", !checkbox.checked);
+    }
+
+    function formatMonths(months) {
+      return Array.isArray(months) && months.length > 0
+        ? months.join(", ")
+        : "Non renseignés";
     }
 
     function getContractDuration(value) {
@@ -923,6 +1083,9 @@
                       Enseigne : ${escapeHTML(m.enseigne || "Non renseignée")}<br>
                       Gérant : ${escapeHTML(m.gerant || "Non renseigné")}<br>
                       Ville : ${escapeHTML(m.ville || "Non renseignée")}<br>
+                      Entrepôt : ${escapeHTML(m.entrepot || "Non renseigné")}<br>
+                      Prévision : ${escapeHTML(m.prevision || "Non renseignée")}<br>
+                      Surface : ${m.surface_m2 !== null && m.surface_m2 !== undefined ? `${escapeHTML(m.surface_m2)} m²` : "Non renseignée"}<br>
                       CA HT : ${formatMoney(m.ca)}<br>
                       CA EDP : ${formatMoney(m.ca_edp)}<br>
                       Dernière visite : ${latestVisit ? formatDate(latestVisit.date_visite) : "Aucune visite"}<br>
@@ -978,6 +1141,13 @@
         "Nom du gérant",
         "Ville",
         "Adresse",
+        "Entrepôt",
+        "Prévision",
+        "Surface m²",
+        "Magasin saisonnier",
+        "Mois ouverture magasin",
+        "Camping",
+        "Mois ouverture camping",
         "Prix de vente",
         "CA HT",
         "CA EDP",
@@ -1003,6 +1173,13 @@
           m.gerant || "",
           m.ville || "",
           m.adresse || "",
+          m.entrepot || "",
+          m.prevision || "",
+          m.surface_m2 || "",
+          m.saisonnier ? "Oui" : "Non",
+          Array.isArray(m.mois_ouverture_saisonnier) ? m.mois_ouverture_saisonnier.join(", ") : "",
+          m.camping ? "Oui" : "Non",
+          Array.isArray(m.mois_ouverture_camping) ? m.mois_ouverture_camping.join(", ") : "",
           m.prix_vente || "",
           m.ca || "",
           m.ca_edp || "",
@@ -1150,6 +1327,53 @@
               </div>
 
               <div class="info-item">
+                <div class="info-label">Entrepôt</div>
+                <div class="info-value">${escapeHTML(selectedMagasin.entrepot || "Non renseigné")}</div>
+              </div>
+
+              <div class="info-item">
+                <div class="info-label">Prévision</div>
+                <div class="info-value">${escapeHTML(selectedMagasin.prevision || "Non renseignée")}</div>
+              </div>
+
+              <div class="info-item">
+                <div class="info-label">Surface du magasin</div>
+                <div class="info-value">${
+                  selectedMagasin.surface_m2 !== null && selectedMagasin.surface_m2 !== undefined
+                    ? `${escapeHTML(selectedMagasin.surface_m2)} m²`
+                    : "Non renseignée"
+                }</div>
+              </div>
+
+              <div class="info-item">
+                <div class="info-label">Magasin saisonnier</div>
+                <div class="info-value">${selectedMagasin.saisonnier ? "Oui" : "Non"}</div>
+              </div>
+
+              <div class="info-item">
+                <div class="info-label">Mois d’ouverture du magasin</div>
+                <div class="info-value">${
+                  selectedMagasin.saisonnier
+                    ? escapeHTML(formatMonths(selectedMagasin.mois_ouverture_saisonnier))
+                    : "Non concerné"
+                }</div>
+              </div>
+
+              <div class="info-item">
+                <div class="info-label">Camping</div>
+                <div class="info-value">${selectedMagasin.camping ? "Oui" : "Non"}</div>
+              </div>
+
+              <div class="info-item">
+                <div class="info-label">Mois d’ouverture du camping</div>
+                <div class="info-value">${
+                  selectedMagasin.camping
+                    ? escapeHTML(formatMonths(selectedMagasin.mois_ouverture_camping))
+                    : "Non concerné"
+                }</div>
+              </div>
+
+              <div class="info-item">
                 <div class="info-label">Date de signature du contrat</div>
                 <div class="info-value">${formatDate(selectedMagasin.date_signature)}</div>
               </div>
@@ -1227,6 +1451,18 @@
       document.getElementById("storePrice").value = magasin?.prix_vente || "";
       document.getElementById("storeCA").value = magasin?.ca || "";
       document.getElementById("storeCAEDP").value = magasin?.ca_edp || "";
+      document.getElementById("storeEntrepot").value = magasin?.entrepot || "";
+      document.getElementById("storePrevision").value = magasin?.prevision || "";
+      document.getElementById("storeSurfaceM2").value = magasin?.surface_m2 ?? "";
+
+      document.getElementById("storeSaisonnier").checked = Boolean(magasin?.saisonnier);
+      setSelectedMonths("moisSaisonnier", magasin?.mois_ouverture_saisonnier || []);
+      toggleConditionalSection("storeSaisonnier", "seasonMonthsSection");
+
+      document.getElementById("storeCamping").checked = Boolean(magasin?.camping);
+      setSelectedMonths("moisCamping", magasin?.mois_ouverture_camping || []);
+      toggleConditionalSection("storeCamping", "campingMonthsSection");
+
       document.getElementById("storeSignature").value = magasin?.date_signature || "";
       document.getElementById("storeContractDuration").value = getContractDuration(magasin?.duree_contrat);
       document.getElementById("storePhoto").value = "";
@@ -1289,6 +1525,17 @@
           prix_vente: document.getElementById("storePrice").value || null,
           ca: document.getElementById("storeCA").value || null,
           ca_edp: document.getElementById("storeCAEDP").value || null,
+          entrepot: document.getElementById("storeEntrepot").value || null,
+          prevision: document.getElementById("storePrevision").value || null,
+          surface_m2: document.getElementById("storeSurfaceM2").value || null,
+          saisonnier: document.getElementById("storeSaisonnier").checked,
+          mois_ouverture_saisonnier: document.getElementById("storeSaisonnier").checked
+            ? getSelectedMonths("moisSaisonnier")
+            : [],
+          camping: document.getElementById("storeCamping").checked,
+          mois_ouverture_camping: document.getElementById("storeCamping").checked
+            ? getSelectedMonths("moisCamping")
+            : [],
           date_signature: document.getElementById("storeSignature").value || null,
           duree_contrat: getContractDuration(document.getElementById("storeContractDuration").value),
           updated_at: new Date().toISOString()
@@ -1406,6 +1653,14 @@
       selectedMagasin = null;
       await loadDashboard();
     }
+
+    document.getElementById("storeSaisonnier").addEventListener("change", () => {
+      toggleConditionalSection("storeSaisonnier", "seasonMonthsSection");
+    });
+
+    document.getElementById("storeCamping").addEventListener("change", () => {
+      toggleConditionalSection("storeCamping", "campingMonthsSection");
+    });
 
     renderHome();
   </script>
