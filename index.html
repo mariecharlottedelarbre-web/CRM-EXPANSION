@@ -580,6 +580,11 @@
             <input id="storeSurfaceM2" type="number" min="0" step="0.01" placeholder="Ex : 250" />
           </div>
 
+          <div>
+            <label>Services</label>
+            <input id="storeServices" placeholder="Ex : Relais colis, FDJ, presse, livraison..." />
+          </div>
+
           <div class="full checkbox-card">
             <label class="checkbox-row">
               <input id="storeSaisonnier" type="checkbox" />
@@ -1488,6 +1493,7 @@
         "Entrepôt",
         "Prévision",
         "Surface m²",
+        "Services",
         "Magasin saisonnier",
         "Mois ouverture magasin",
         "Camping",
@@ -1520,6 +1526,7 @@
           m.entrepot || "",
           m.prevision || "",
           m.surface_m2 || "",
+          m.services || "",
           m.saisonnier ? "Oui" : "Non",
           Array.isArray(m.mois_ouverture_saisonnier) ? m.mois_ouverture_saisonnier.join(", ") : "",
           m.camping ? "Oui" : "Non",
@@ -1690,6 +1697,11 @@
               </div>
 
               <div class="info-item">
+                <div class="info-label">Services</div>
+                <div class="info-value">${escapeHTML(selectedMagasin.services || "Non renseignés")}</div>
+              </div>
+
+              <div class="info-item">
                 <div class="info-label">Magasin saisonnier</div>
                 <div class="info-value">${selectedMagasin.saisonnier ? "Oui" : "Non"}</div>
               </div>
@@ -1798,6 +1810,7 @@
       document.getElementById("storeEntrepot").value = magasin?.entrepot || "";
       document.getElementById("storePrevision").value = magasin?.prevision || "";
       document.getElementById("storeSurfaceM2").value = magasin?.surface_m2 ?? "";
+      document.getElementById("storeServices").value = magasin?.services || "";
 
       document.getElementById("storeSaisonnier").checked = Boolean(magasin?.saisonnier);
       setSelectedMonths("moisSaisonnier", magasin?.mois_ouverture_saisonnier || []);
@@ -1872,6 +1885,7 @@
           entrepot: document.getElementById("storeEntrepot").value || null,
           prevision: document.getElementById("storePrevision").value || null,
           surface_m2: document.getElementById("storeSurfaceM2").value || null,
+          services: document.getElementById("storeServices").value.trim() || null,
           saisonnier: document.getElementById("storeSaisonnier").checked,
           mois_ouverture_saisonnier: document.getElementById("storeSaisonnier").checked
             ? getSelectedMonths("moisSaisonnier")
